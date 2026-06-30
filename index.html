@@ -159,6 +159,28 @@
   }
   .reset-btn:hover { border-color: var(--red); color: var(--red); }
 
+  .conclude-btn {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    background: var(--green);
+    border: none;
+    color: #06250f;
+    padding: 12px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .conclude-btn:hover { opacity: 0.9; }
+  .conclude-btn:disabled {
+    background: var(--cell);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
   .checklist-group { margin-bottom: 14px; }
   .checklist-group h3 {
     font-size: 13px;
@@ -269,6 +291,8 @@
       </div>
       <button class="reset-btn" id="resetBtn">↺ Reiniciar checklist de hoje</button>
       <div id="checklist"></div>
+      <div id="completeBanner" class="alert ok hidden" style="margin-top:14px;"></div>
+      <button class="conclude-btn" id="concludeBtn">✔ Concluir limpeza do dia</button>
     </div>
   </div>
 
@@ -288,6 +312,12 @@
         </tbody>
       </table>
       <p class="sub" style="margin:10px 0 0">A escala se repete semanalmente.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Dias de Limpeza Concluídos</h2>
+      <ul class="history-list" id="completedDaysList"></ul>
+      <button class="clear-history-btn" id="clearCompletedBtn">Limpar histórico de dias</button>
     </div>
 
     <div class="panel">
@@ -428,6 +458,7 @@ function loadData() {
   if (typeof parsed.checkedDate !== "string") parsed.checkedDate = todayStr();
   if (!parsed.checked || typeof parsed.checked !== "object") parsed.checked = {};
   if (!Array.isArray(parsed.history)) parsed.history = [];
+  if (!Array.isArray(parsed.completedDays)) parsed.completedDays = [];
   if (typeof parsed.currentUser !== "string") parsed.currentUser = "";
 
   // se mudou o dia, zera o checklist do dia (mas mantém o histórico)
@@ -522,13 +553,85 @@ function updateSummary() {
   document.getElementById("progressText").textContent = `${done} / ${total}`;
   document.getElementById("progressValue").textContent = pct + "%";
   document.getElementById("doneCount").textContent = `${done}/${total}`;
+  updateConcludeButton();
 }
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (confirm("Reiniciar o checklist de hoje? Os itens marcados serão desmarcados (o histórico permanece salvo).")) {
     data.checked = {};
+    data.completedDays = data.completedDays.filter(d => d.date !== todayStr());
     saveData();
     renderChecklist();
+    renderCompletedDays();
+  }
+});
+
+// ---------- Conclusão do dia ----------
+
+function todayCompletion() {
+  return data.completedDays.find(d => d.date === todayStr());
+}
+
+function updateConcludeButton() {
+  const btn = document.getElementById("concludeBtn");
+  const banner = document.getElementById("completeBanner");
+  const checkboxes = document.querySelectorAll('#checklist input[type="checkbox"]');
+  const total = checkboxes.length;
+  const done = Array.from(checkboxes).filter(c => c.checked).length;
+  const allDone = total > 0 && done === total;
+  const completion = todayCompletion();
+
+  if (completion) {
+    btn.disabled = true;
+    btn.textContent = "✔ Limpeza de hoje já concluída";
+    banner.classList.remove("hidden");
+    banner.textContent = `✅ Limpeza concluída por ${completion.user} em ${formatDateTime(completion.at)}.`;
+  } else {
+    btn.disabled = !allDone;
+    btn.textContent = allDone ? "✔ Concluir limpeza do dia" : `✔ Concluir limpeza do dia (${done}/${total} feitos)`;
+    banner.classList.add("hidden");
+  }
+}
+
+document.getElementById("concludeBtn").addEventListener("click", () => {
+  if (todayCompletion()) return;
+  const entry = {
+    date: todayStr(),
+    dayName: DAY_NAMES[new Date().getDay()],
+    user: data.currentUser || "Não identificado",
+    at: new Date().toISOString()
+  };
+  data.completedDays.unshift(entry);
+  saveData();
+  updateConcludeButton();
+  renderCompletedDays();
+});
+
+function renderCompletedDays() {
+  const list = document.getElementById("completedDaysList");
+  list.innerHTML = "";
+
+  if (data.completedDays.length === 0) {
+    list.innerHTML = '<li class="history-empty">Nenhum dia concluído ainda.</li>';
+    return;
+  }
+
+  data.completedDays.slice(0, 60).forEach(d => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span class="history-item-text">✅ ${escapeHtml(d.dayName)} — limpeza concluída</span>
+      <span class="history-meta">${escapeHtml(d.user)} · ${formatDateTime(d.at)}</span>
+    `;
+    list.appendChild(li);
+  });
+}
+
+document.getElementById("clearCompletedBtn").addEventListener("click", () => {
+  if (confirm("Apagar o histórico de dias concluídos?")) {
+    data.completedDays = [];
+    saveData();
+    renderCompletedDays();
+    updateConcludeButton();
   }
 });
 
@@ -610,6 +713,7 @@ function initUserSelect() {
 highlightTodayRow();
 renderChecklist();
 renderHistory();
+renderCompletedDays();
 initUserSelect();
 
 if ("serviceWorker" in navigator) {
