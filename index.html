@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Limpeza do Escritório</title>
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Limpeza">
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --yellow: #eab308;
+    --border: #334155;
+    --cell: #0f172a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+
+  .alert {
+    background: #3a1414;
+    border: 1px solid var(--red);
+    color: #fca5a5;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .alert.ok {
+    background: #142a1c;
+    border-color: var(--green);
+    color: #86efac;
+  }
+  .alert.hidden { display: none; }
+
+  .user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .user-row label { font-size: 13px; color: var(--muted); }
+  .user-row select {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card .label { color: var(--muted); font-size: 13px; }
+  .card .value { font-size: 24px; font-weight: 600; margin-top: 4px; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .inv { color: var(--blue); }
+  .warn { color: var(--yellow); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  table.sheet { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.sheet th {
+    text-align: left;
+    padding: 8px 6px;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  table.sheet td {
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.sheet tr.today-row td {
+    background: #14223a;
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .progress-track {
+    flex: 1;
+    background: var(--cell);
+    border-radius: 6px;
+    overflow: hidden;
+    height: 10px;
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    width: 0%;
+    transition: width 0.25s ease;
+  }
+  .progress-text { font-size: 13px; color: var(--muted); min-width: 80px; text-align: right; }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .checklist-group { margin-bottom: 14px; }
+  .checklist-group h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 0 0 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 4px;
+    border-radius: 6px;
+  }
+  .checklist-item:hover { background: var(--cell); }
+  .checklist-item input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--green);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checklist-item label { cursor: pointer; font-size: 14px; }
+  .checklist-item.checked label { color: var(--muted); text-decoration: line-through; }
+
+  .history-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .history-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .history-list li:last-child { border-bottom: none; }
+  .history-item-text { color: var(--text); }
+  .history-meta { color: var(--muted); font-size: 12px; }
+  .history-empty { color: var(--muted); font-size: 13px; }
+  .clear-history-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 12px;
+  }
+  .clear-history-btn:hover { border-color: var(--red); color: var(--red); }
+
+  ol, ul.rules { padding-left: 20px; margin: 0; }
+  ol li, ul.rules li { margin-bottom: 10px; font-size: 14px; line-height: 1.4; }
+  ul.rules { list-style: disc; }
+</style>
+</head>
+<body>
+
+<h1>🧹 Limpeza do Escritório</h1>
+<div class="sub">Procedimento Operacional Padrão (POP) — marque os itens conforme for concluindo.</div>
+
+<div id="dayAlert" class="alert hidden"></div>
+
+<div class="user-row">
+  <label for="userSelect">Quem está usando:</label>
+  <select id="userSelect">
+    <option value="">Selecione seu nome...</option>
+    <option value="Pedro">Pedro</option>
+    <option value="Jonathan">Jonathan</option>
+    <option value="Rangel">Rangel</option>
+  </select>
+</div>
+
+<div class="summary">
+  <div class="card">
+    <div class="label">Hoje</div>
+    <div class="value" id="todayLabel">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Responsável de hoje</div>
+    <div class="value inv" id="responsibleLabel">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Itens concluídos</div>
+    <div class="value pos" id="doneCount">0/0</div>
+  </div>
+  <div class="card">
+    <div class="label">Progresso</div>
+    <div class="value" id="progressValue">0%</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="panel">
+      <h2>Checklist Diário</h2>
+      <div class="progress-wrap">
+        <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+        <div class="progress-text" id="progressText">0 / 0</div>
+      </div>
+      <button class="reset-btn" id="resetBtn">↺ Reiniciar checklist de hoje</button>
+      <div id="checklist"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Escala de Limpeza</h2>
+      <table class="sheet" id="scheduleTable">
+        <thead><tr><th>Dia</th><th>Responsável</th></tr></thead>
+        <tbody>
+          <tr data-day="1"><td>Segunda-feira</td><td>Pedro</td></tr>
+          <tr data-day="2"><td>Terça-feira</td><td>Jonathan</td></tr>
+          <tr data-day="3"><td>Quarta-feira</td><td>Rangel</td></tr>
+          <tr data-day="4"><td>Quinta-feira</td><td>Pedro</td></tr>
+          <tr data-day="5"><td>Sexta-feira</td><td>Jonathan</td></tr>
+          <tr data-day="6"><td>Sábado</td><td>Rangel</td></tr>
+          <tr data-day="0"><td>Domingo</td><td>Empresa fechada</td></tr>
+        </tbody>
+      </table>
+      <p class="sub" style="margin:10px 0 0">A escala se repete semanalmente.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Histórico de Conclusões</h2>
+      <ul class="history-list" id="historyList"></ul>
+      <button class="clear-history-btn" id="clearHistoryBtn">Limpar histórico</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Horário da Limpeza</h2>
+  <p style="font-size:14px; line-height:1.5; margin:0;">A pessoa responsável pela limpeza do dia deverá iniciar a limpeza <strong>1 hora antes do término do expediente</strong>. Esse período é destinado exclusivamente para a realização de toda a limpeza e organização do escritório. <strong>Importante:</strong> a limpeza deve ser completa. Não será aceita limpeza superficial.</p>
+</div>
+
+<div class="panel">
+  <h2>Regras Gerais</h2>
+  <ol>
+    <li>A pessoa responsável pela limpeza do dia deverá iniciar a limpeza 1 hora antes do término do expediente e concluir todo o checklist antes de ir embora.</li>
+    <li>Cada colaborador é responsável pela própria organização durante o dia: copos, pratos e talheres utilizados devem ser lavados pelo próprio responsável; objetos pessoais devem permanecer organizados; nenhum colaborador deve deixar sua bagunça para que outra pessoa limpe.</li>
+    <li>A pessoa responsável pela limpeza do dia tem a função de manter o escritório limpo e organizado, não de limpar a bagunça individual de outros colaboradores.</li>
+    <li>Caso existam utensílios utilizados e ainda não lavados, a pessoa responsável pela limpeza deverá solicitar ao colaborador que os utilizou para realizar a lavagem. Após estarem limpos e secos, poderão ser guardados.</li>
+    <li>Todos devem colaborar para manter o ambiente organizado durante todo o expediente.</li>
+    <li>Ao finalizar a limpeza, todos os materiais utilizados (mop, panos, baldes, vassouras e demais itens) deverão estar limpos, lavados e guardados em seus devidos lugares.</li>
+    <li>O objetivo é entregar o escritório completamente limpo, organizado e pronto para o próximo dia de trabalho.</li>
+  </ol>
+</div>
+
+<div class="panel">
+  <h2>Padrão de Qualidade</h2>
+  <ul class="rules">
+    <li>A limpeza deve ser detalhada e completa, nunca apenas superficial.</li>
+    <li>Todos os móveis, equipamentos e ambientes devem ficar limpos.</li>
+    <li>Todo objeto deve voltar ao seu devido lugar.</li>
+    <li>Nenhum material de limpeza poderá ser guardado sujo.</li>
+    <li>O escritório deve estar pronto para iniciar o próximo dia de trabalho sem necessidade de qualquer ajuste.</li>
+  </ul>
+</div>
+
+<script>
+const STORAGE_KEY = "limpezaEscritorio";
+
+const SCHEDULE = {
+  0: "Empresa fechada",
+  1: "Pedro",
+  2: "Jonathan",
+  3: "Rangel",
+  4: "Pedro",
+  5: "Jonathan",
+  6: "Rangel"
+};
+
+const DAY_NAMES = {
+  0: "Domingo",
+  1: "Segunda-feira",
+  2: "Terça-feira",
+  3: "Quarta-feira",
+  4: "Quinta-feira",
+  5: "Sexta-feira",
+  6: "Sábado"
+};
+
+const CHECKLIST = [
+  { group: "Área Geral", items: [
+    "Passar vassoura em todo o escritório.",
+    "Passar mop/pano em todo o escritório.",
+    "Limpar o corredor.",
+    "Limpar a sacada.",
+    "Limpar o tapete.",
+    "Colocar todos os objetos fora do lugar em seus devidos lugares."
+  ]},
+  { group: "Mesas e Móveis", items: [
+    "Limpar a mesa principal.",
+    "Limpar a mesa da diretoria.",
+    "Limpar a mesa da cozinha.",
+    "Limpar a mesa do videogame.",
+    "Limpar a mesa do frigobar.",
+    "Limpar todas as cadeiras.",
+    "Limpar o quadro do milhão."
+  ]},
+  { group: "Equipamentos", items: [
+    "Limpar computadores.",
+    "Limpar teclados.",
+    "Limpar mouses.",
+    "Limpar a televisão.",
+    "Limpar o frigobar por fora.",
+    "Verificar o ventilador e limpar caso esteja sujo."
+  ]},
+  { group: "Banheiro", items: [
+    "Limpar a pia.",
+    "Limpar o vaso sanitário.",
+    "Jogar água e realizar uma limpeza rápida do banheiro.",
+    "Trocar o saco de lixo."
+  ]},
+  { group: "Cozinha", items: [
+    "Limpar a pia.",
+    "Limpar a bancada.",
+    "Limpar a geladeira por fora.",
+    "Verificar a geladeira por dentro e limpar caso esteja suja.",
+    "Verificar o micro-ondas por dentro e limpar caso esteja sujo.",
+    "Verificar a Air Fryer por dentro e limpar caso esteja suja.",
+    "Limpar o fogão/chapa.",
+    "Limpar ao redor da Air Fryer, micro-ondas e demais equipamentos.",
+    "Guardar toda a louça que já estiver seca.",
+    "Deixar toda a cozinha organizada."
+  ]},
+  { group: "Lixo", items: [
+    "Retirar todos os lixos do escritório.",
+    "Retirar o lixo do banheiro.",
+    "Retirar o lixo da cozinha.",
+    "Levar todos os sacos até a lixeira externa.",
+    "Colocar sacos novos em todas as lixeiras."
+  ]},
+  { group: "Lavanderia", items: [
+    "Deixar a lavanderia organizada.",
+    "Lavar o mop.",
+    "Lavar os panos.",
+    "Limpar a vassoura.",
+    "Guardar todos os materiais de limpeza limpos."
+  ]},
+  { group: "Plantas", items: [
+    "Regar as plantas às segundas e sextas-feiras."
+  ]}
+];
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  let parsed = null;
+  if (raw) {
+    try { parsed = JSON.parse(raw); } catch (e) { parsed = null; }
+  }
+  if (!parsed || typeof parsed !== "object") parsed = {};
+  if (typeof parsed.checkedDate !== "string") parsed.checkedDate = todayStr();
+  if (!parsed.checked || typeof parsed.checked !== "object") parsed.checked = {};
+  if (!Array.isArray(parsed.history)) parsed.history = [];
+  if (typeof parsed.currentUser !== "string") parsed.currentUser = "";
+
+  // se mudou o dia, zera o checklist do dia (mas mantém o histórico)
+  if (parsed.checkedDate !== todayStr()) {
+    parsed.checkedDate = todayStr();
+    parsed.checked = {};
+  }
+  return parsed;
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let data = loadData();
+
+function escapeHtml(s) {
+  const div = document.createElement("div");
+  div.textContent = s || "";
+  return div.innerHTML;
+}
+
+function formatDateTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+// ---------- Checklist ----------
+
+function renderChecklist() {
+  const container = document.getElementById("checklist");
+  container.innerHTML = "";
+
+  CHECKLIST.forEach((group, gi) => {
+    const groupEl = document.createElement("div");
+    groupEl.className = "checklist-group";
+
+    const title = document.createElement("h3");
+    title.textContent = group.group;
+    groupEl.appendChild(title);
+
+    group.items.forEach((item, ii) => {
+      const id = `item-${gi}-${ii}`;
+      const checked = !!data.checked[id];
+
+      const row = document.createElement("div");
+      row.className = "checklist-item" + (checked ? " checked" : "");
+
+      row.innerHTML = `
+        <input type="checkbox" id="${id}" ${checked ? "checked" : ""}>
+        <label for="${id}">${escapeHtml(item)}</label>
+      `;
+
+      const checkbox = row.querySelector("input");
+      checkbox.addEventListener("change", () => {
+        data.checked[id] = checkbox.checked;
+        row.classList.toggle("checked", checkbox.checked);
+
+        if (checkbox.checked) {
+          data.history.unshift({
+            text: item,
+            group: group.group,
+            user: data.currentUser || "Não identificado",
+            at: new Date().toISOString()
+          });
+        } else {
+          const idx = data.history.findIndex(h => h.text === item && h.group === group.group);
+          if (idx !== -1) data.history.splice(idx, 1);
+        }
+
+        saveData();
+        updateSummary();
+        renderHistory();
+      });
+
+      groupEl.appendChild(row);
+    });
+
+    container.appendChild(groupEl);
+  });
+
+  updateSummary();
+}
+
+function updateSummary() {
+  const checkboxes = document.querySelectorAll('#checklist input[type="checkbox"]');
+  const total = checkboxes.length;
+  const done = Array.from(checkboxes).filter(c => c.checked).length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressText").textContent = `${done} / ${total}`;
+  document.getElementById("progressValue").textContent = pct + "%";
+  document.getElementById("doneCount").textContent = `${done}/${total}`;
+}
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (confirm("Reiniciar o checklist de hoje? Os itens marcados serão desmarcados (o histórico permanece salvo).")) {
+    data.checked = {};
+    saveData();
+    renderChecklist();
+  }
+});
+
+// ---------- Histórico ----------
+
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+
+  if (data.history.length === 0) {
+    list.innerHTML = '<li class="history-empty">Nenhuma tarefa concluída ainda.</li>';
+    return;
+  }
+
+  data.history.slice(0, 100).forEach(h => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span class="history-item-text">✔ ${escapeHtml(h.text)}</span>
+      <span class="history-meta">${escapeHtml(h.group)} · ${escapeHtml(h.user)} · ${formatDateTime(h.at)}</span>
+    `;
+    list.appendChild(li);
+  });
+}
+
+document.getElementById("clearHistoryBtn").addEventListener("click", () => {
+  if (confirm("Apagar todo o histórico de conclusões?")) {
+    data.history = [];
+    saveData();
+    renderHistory();
+  }
+});
+
+// ---------- Escala / dia atual ----------
+
+function highlightTodayRow() {
+  const dayIndex = new Date().getDay();
+  document.querySelectorAll("#scheduleTable tbody tr").forEach(row => {
+    row.classList.toggle("today-row", Number(row.dataset.day) === dayIndex);
+  });
+  document.getElementById("todayLabel").textContent = DAY_NAMES[dayIndex];
+  document.getElementById("responsibleLabel").textContent = SCHEDULE[dayIndex];
+}
+
+function updateDayAlert() {
+  const alertBox = document.getElementById("dayAlert");
+  const dayIndex = new Date().getDay();
+  const responsible = SCHEDULE[dayIndex];
+  const user = data.currentUser;
+
+  if (!user || dayIndex === 0) {
+    alertBox.classList.add("hidden");
+    return;
+  }
+
+  alertBox.classList.remove("hidden");
+  if (user === responsible) {
+    alertBox.classList.remove("ok");
+    alertBox.textContent = `🔴 Hoje é ${DAY_NAMES[dayIndex]}: é o seu dia de limpeza, ${user}! Comece 1 hora antes do término do expediente.`;
+  } else {
+    alertBox.classList.add("ok");
+    alertBox.textContent = `Hoje é ${DAY_NAMES[dayIndex]}: a limpeza é de responsabilidade de ${responsible}.`;
+  }
+}
+
+function initUserSelect() {
+  const select = document.getElementById("userSelect");
+  select.value = data.currentUser || "";
+
+  select.addEventListener("change", () => {
+    data.currentUser = select.value;
+    saveData();
+    updateDayAlert();
+  });
+
+  updateDayAlert();
+}
+
+// ---------- init ----------
+highlightTodayRow();
+renderChecklist();
+renderHistory();
+initUserSelect();
+
+// Remove qualquer service worker antigo registrado (estava causando o ícone
+// instalado a ficar preso numa versão em cache que não abria).
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  });
+  if (window.caches) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+}
+</script>
+</body>
+</html>
