@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Limpeza do Escritório</title>
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -611,15 +612,10 @@ renderChecklist();
 renderHistory();
 initUserSelect();
 
-// Remove qualquer service worker antigo registrado (estava causando o ícone
-// instalado a ficar preso numa versão em cache que não abria).
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(reg => reg.unregister());
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
   });
-  if (window.caches) {
-    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-  }
 }
 </script>
 </body>
